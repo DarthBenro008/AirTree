@@ -5,9 +5,11 @@ import android.content.Context.LOCATION_SERVICE
 import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationListener
+import retrofit2.Callback
 import android.location.LocationManager
 import android.os.Bundle
 import android.util.Log
+import android.util.Log.d
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -17,6 +19,9 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat.getSystemService
 import androidx.lifecycle.lifecycleScope
 import com.benrostudios.airtree.R
+import com.benrostudios.airtree.models.WeatherModel
+import com.benrostudios.airtree.network.ServiceBuilder
+import com.benrostudios.airtree.network.WeatherApi
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.ar.core.Pose
@@ -29,6 +34,8 @@ import com.google.ar.sceneform.ux.TransformableNode
 import kotlinx.android.synthetic.main.node_card_view_layout.view.*
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.launch
+import retrofit2.Call
+import retrofit2.Response
 
 
 class MainArFragment : Fragment(R.layout.fragment_ar) {
@@ -38,7 +45,7 @@ class MainArFragment : Fragment(R.layout.fragment_ar) {
     private var helloArText: ViewRenderable? = null
     lateinit var simuFragmentMain: ArFragment
     private var locationManager: LocationManager? = null
-    private var textLongitude: String = ""
+    private var aqiText: String = ""
     private var fusedLocationClient: FusedLocationProviderClient? = null
 
 
@@ -93,7 +100,9 @@ class MainArFragment : Fragment(R.layout.fragment_ar) {
             textAnchorNode.renderable = helloArText
             textNode.setParent(textAnchorNode);
 
-            helloArText?.view?.textView?.text = textLongitude;
+            if(aqiText != ""){
+                helloArText?.view?.textView?.text = aqiText;
+            }
 
 
         }
@@ -146,12 +155,36 @@ class MainArFragment : Fragment(R.layout.fragment_ar) {
 
         fusedLocationClient?.lastLocation!!.addOnCompleteListener { task ->
             if (task.isSuccessful && task.result != null) {
-                Toast.makeText(requireContext(), "${task.result.latitude}", Toast.LENGTH_LONG)
+                Toast.makeText(
+                    requireContext(),
+                    "${task.result.latitude} ${task.result.longitude}",
+                    Toast.LENGTH_LONG
+                )
                     .show()
+                networkCall(task.result.latitude, task.result.longitude)
             } else {
                 Log.w("myTag", "getLastLocation:exception", task.exception)
             }
         }
+    }
+
+
+    private fun networkCall(lat: Double, long: Double) {
+        val request = ServiceBuilder.buildService(WeatherApi::class.java)
+        val call = request.getWeatherData(lat, long, "")
+        call.enqueue(object : Callback<WeatherModel> {
+            override fun onResponse(call: Call<WeatherModel>, response: Response<WeatherModel>) {
+                if (response.isSuccessful) {
+                    val aqi = response.body()!!.list[0].main.aqi
+                    helloArText?.view?.textView?.text = aqi.toString()
+                    aqiText = aqi.toString()
+                }
+            }
+
+            override fun onFailure(call: Call<WeatherModel>, t: Throwable) {
+                d("myTAG", "Network call failure due to ${t.message}")
+            }
+        })
     }
 
 }
