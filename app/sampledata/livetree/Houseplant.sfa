@@ -1,0 +1,88 @@
+{
+  materials: [
+    {
+      name: 'Houseplant_mat1',
+      parameters: [
+        {
+          baseColorFactor: [
+            0.5,
+            0.5,
+            0.5,
+            1,
+          ],
+        },
+        {
+          baseColor: 'Houseplant_BaseColor',
+        },
+        {
+          diffuseColorFactor: null,
+        },
+        {
+          diffuseColor: null,
+        },
+        {
+          normal: null,
+        },
+        {
+          metallicFactor: 0,
+        },
+        {
+          roughnessFactor: 0.96994800000000003,
+        },
+        {
+          specularFactor: null,
+        },
+        {
+          glossinessFactor: null,
+        },
+        {
+          specularGlossiness: null,
+        },
+        {
+          specularGlossinessCalculation: null,
+        },
+        {
+          metallicRoughness: null,
+        },
+        {
+          occlusion: null,
+        },
+        {
+          emissiveFactor: [
+            0,
+            0,
+            0,
+            1,
+          ],
+        },
+        {
+          emissive: null,
+        },
+        {
+          opacity: null,
+        },
+      ],
+      source: 'build/sceneform_sdk/default_materials/gltf_material.sfm',
+    },
+  ],
+  model: {
+    attributes: [
+      'Position',
+      'TexCoord',
+      'Orientation',
+    ],
+    collision: {},
+    file: 'sampledata/livetree/Houseplant.gltf',
+    name: 'Houseplant',
+    recenter: 'root',
+    scale: 0.230654,
+  },
+  samplers: [
+    {
+      file: 'sampledata/livetree\\Houseplant_BaseColor.png',
+      name: 'Houseplant_BaseColor',
+      pipeline_name: 'Houseplant_BaseColor.png',
+    },
+  ],
+  version: '0.54:2',
+}
