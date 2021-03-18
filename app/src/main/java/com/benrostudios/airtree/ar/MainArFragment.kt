@@ -37,7 +37,7 @@ class MainArFragment : Fragment(R.layout.fragment_ar) {
     private var liveTree: ModelRenderable? = null
     private var helloArText: ViewRenderable? = null
     lateinit var simuFragmentMain: ArFragment
-    private var locationManager : LocationManager? = null
+    private var locationManager: LocationManager? = null
     private var textLongitude: String = ""
     private var fusedLocationClient: FusedLocationProviderClient? = null
 
@@ -70,9 +70,17 @@ class MainArFragment : Fragment(R.layout.fragment_ar) {
                 hitResult.createAnchor()
             )
 
-           val textAnchorNode = AnchorNode(
-               hitResult.trackable.createAnchor(hitResult.hitPose.compose(Pose.makeTranslation(0.0f, 1f,0.0f)))
-           )
+            val textAnchorNode = AnchorNode(
+                hitResult.trackable.createAnchor(
+                    hitResult.hitPose.compose(
+                        Pose.makeTranslation(
+                            0.0f,
+                            1f,
+                            0.0f
+                        )
+                    )
+                )
+            )
             textAnchorNode.setParent(simuFragmentMain.arSceneView.scene)
             anchorNode.setParent(simuFragmentMain.arSceneView.scene)
             val node: TransformableNode = TransformableNode(simuFragmentMain.transformationSystem)
@@ -136,11 +144,11 @@ class MainArFragment : Fragment(R.layout.fragment_ar) {
             return
         }
 
-        fusedLocationClient?.lastLocation!!.addOnCompleteListener{ task ->
+        fusedLocationClient?.lastLocation!!.addOnCompleteListener { task ->
             if (task.isSuccessful && task.result != null) {
-                Toast.makeText(requireContext(),"${task.result.latitude}", Toast.LENGTH_LONG).show()
-            }
-            else {
+                Toast.makeText(requireContext(), "${task.result.latitude}", Toast.LENGTH_LONG)
+                    .show()
+            } else {
                 Log.w("myTag", "getLastLocation:exception", task.exception)
             }
         }
