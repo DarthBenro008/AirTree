@@ -1,10 +1,7 @@
 package com.benrostudios.airtree.ar
 
 import android.Manifest
-import android.content.Context.LOCATION_SERVICE
 import android.content.pm.PackageManager
-import android.location.Location
-import android.location.LocationListener
 import retrofit2.Callback
 import android.location.LocationManager
 import android.os.Bundle
@@ -16,9 +13,9 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat.getSystemService
 import androidx.lifecycle.lifecycleScope
 import com.benrostudios.airtree.R
+import com.benrostudios.airtree.Secrets.API_KEY
 import com.benrostudios.airtree.models.WeatherModel
 import com.benrostudios.airtree.network.ServiceBuilder
 import com.benrostudios.airtree.network.WeatherApi
@@ -42,10 +39,10 @@ class MainArFragment : Fragment(R.layout.fragment_ar) {
 
     private var deadTree: ModelRenderable? = null
     private var liveTree: ModelRenderable? = null
-    private var helloArText: ViewRenderable? = null
+    private var aqiDashboard: ViewRenderable? = null
     lateinit var simuFragmentMain: ArFragment
     private var locationManager: LocationManager? = null
-    private var aqiText: String = ""
+//    private lateinit var weatherModel: WeatherModel
     private var fusedLocationClient: FusedLocationProviderClient? = null
 
 
@@ -71,7 +68,7 @@ class MainArFragment : Fragment(R.layout.fragment_ar) {
     }
 
 
-    private fun initTapListener() {
+    private fun initTapListener(weatherModel: WeatherModel) {
         simuFragmentMain.setOnTapArPlaneListener { hitResult, _, _ ->
             val anchorNode = AnchorNode(
                 hitResult.createAnchor()
@@ -93,18 +90,16 @@ class MainArFragment : Fragment(R.layout.fragment_ar) {
             val node: TransformableNode = TransformableNode(simuFragmentMain.transformationSystem)
             node.scaleController.maxScale = 0.5f;
             node.scaleController.minScale = 0.4f;
-            node.renderable = liveTree
-            node.setParent(anchorNode)
-
-            val textNode = Node()
-            textAnchorNode.renderable = helloArText
-            textNode.setParent(textAnchorNode);
-
-            if(aqiText != ""){
-                helloArText?.view?.textView?.text = aqiText;
+            val aqiIndex = weatherModel.list[0].main.aqi
+            node.renderable = when{
+                aqiIndex > 3.0 -> deadTree
+                else -> liveTree
             }
-
-
+            node.setParent(anchorNode)
+            val textNode = Node()
+            textAnchorNode.renderable = aqiDashboard
+            textNode.setParent(textAnchorNode);
+            setDashboard(aqiIndex)
         }
     }
 
@@ -121,7 +116,7 @@ class MainArFragment : Fragment(R.layout.fragment_ar) {
             liveTree =
                 ModelRenderable.builder().setSource(requireContext(), R.raw.houseplant).build()
                     .await()
-            helloArText =
+            aqiDashboard =
                 ViewRenderable.builder().setView(requireContext(), R.layout.node_card_view_layout)
                     .build().await()
 //            Toast.makeText(
@@ -129,7 +124,7 @@ class MainArFragment : Fragment(R.layout.fragment_ar) {
 //                "Your Plants have been loaded!",
 //                Toast.LENGTH_SHORT
 //            ).show()
-            initTapListener()
+//            initTapListener()
         }
     }
 
@@ -171,20 +166,38 @@ class MainArFragment : Fragment(R.layout.fragment_ar) {
 
     private fun networkCall(lat: Double, long: Double) {
         val request = ServiceBuilder.buildService(WeatherApi::class.java)
-        val call = request.getWeatherData(lat, long, "")
+        val call = request.getWeatherData(lat, long, API_KEY)
         call.enqueue(object : Callback<WeatherModel> {
             override fun onResponse(call: Call<WeatherModel>, response: Response<WeatherModel>) {
                 if (response.isSuccessful) {
-                    val aqi = response.body()!!.list[0].main.aqi
-                    helloArText?.view?.textView?.text = aqi.toString()
-                    aqiText = aqi.toString()
+                    initTapListener(response.body()!!)
                 }
             }
 
             override fun onFailure(call: Call<WeatherModel>, t: Throwable) {
                 d("myTAG", "Network call failure due to ${t.message}")
+                initTapListener(WeatherModel())
             }
         })
+    }
+
+    private fun setDashboard(aqiIndex: Double){
+        val dashboardView = aqiDashboard?.view
+        dashboardView?.aqi_progress?.setProgress(5 - aqiIndex, 5.0);
+        val aqiText = when(aqiIndex){
+            5.0 ->  "Very Poor Quality Air"
+            4.0 -> "Moderate Quality Air"
+            3.0 -> "Fair Quality Air"
+            2.0 -> "Good Air"
+            1.0 -> "Healthy Air"
+            else -> "Loading"
+        }
+        val plantHealth: String = when{
+            aqiIndex >= 3 -> "Your plant isn't feeling well!"
+            else -> "Your plant is feeling good!"
+        }
+        dashboardView?.plantHealth?.text = plantHealth
+        dashboardView?.aqi_text?.text = aqiText
     }
 
 }
