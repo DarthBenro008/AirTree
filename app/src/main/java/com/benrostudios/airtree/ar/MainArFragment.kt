@@ -39,6 +39,7 @@ class MainArFragment : Fragment(R.layout.fragment_ar) {
 
     private var deadTree: ModelRenderable? = null
     private var liveTree: ModelRenderable? = null
+    private var moderateTree: ModelRenderable? = null
     private var aqiDashboard: ViewRenderable? = null
     private var carbonSideboard: ViewRenderable? = null
     private var emissionSideboard: ViewRenderable? = null
@@ -120,6 +121,7 @@ class MainArFragment : Fragment(R.layout.fragment_ar) {
             node.scaleController.minScale = 0.4f;
             val aqiIndex = weatherModel.list[0].main.aqi
             node.renderable = when {
+                aqiIndex == 3.0 -> moderateTree
                 aqiIndex > 3.0 -> deadTree
                 else -> liveTree
             }
@@ -152,6 +154,10 @@ class MainArFragment : Fragment(R.layout.fragment_ar) {
             liveTree =
                 ModelRenderable.builder().setSource(requireContext(), R.raw.houseplant).build()
                     .await()
+            moderateTree =
+                ModelRenderable.builder()
+                    .setSource(requireContext(), R.raw.fiddleleaffigpottedplant).build()
+                    .await()
             aqiDashboard =
                 ViewRenderable.builder().setView(requireContext(), R.layout.node_card_view_layout)
                     .build().await()
@@ -162,11 +168,11 @@ class MainArFragment : Fragment(R.layout.fragment_ar) {
                 ViewRenderable.builder().setView(requireContext(), R.layout.node_sideboard_layout)
                     .build().await()
 
-//            Toast.makeText(
-//                requireContext(),
-//                "Your Plants have been loaded!",
-//                Toast.LENGTH_SHORT
-//            ).show()
+            Toast.makeText(
+                requireContext(),
+                "Your Plants have been loaded!",
+                Toast.LENGTH_SHORT
+            ).show()
 
         }
     }
@@ -221,45 +227,6 @@ class MainArFragment : Fragment(R.layout.fragment_ar) {
             networkCall(it.latitude, it.longitude)
         }.addOnFailureListener {
             d("myTAG", "${it.message}")
-        }
-    }
-
-    private fun getLocationUpdates() {
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(context!!)
-        locationRequest = LocationRequest()
-        locationRequest!!.interval = 50000
-        locationRequest!!.fastestInterval = 50000
-        locationRequest!!.smallestDisplacement = 170f // 170 m = 0.1 mile
-        locationRequest!!.priority =
-            LocationRequest.PRIORITY_HIGH_ACCURACY //set according to your app function
-        locationCallback = object : LocationCallback() {
-            override fun onLocationResult(locationResult: LocationResult?) {
-                locationResult ?: return
-
-                if (locationResult.locations.isNotEmpty()) {
-                    fusedLocationClient!!.removeLocationUpdates(locationCallback!!)
-                    // get latest location
-                    val location =
-                        locationResult.lastLocation
-                    Toast.makeText(
-                        requireContext(),
-                        "lati: ${location.latitude} longi: ${location.longitude}",
-                        Toast.LENGTH_LONG
-                    ).show()
-                    // use your location object
-                    // get latitude , longitude and other info from this
-                    d("myTAG", "ggwp")
-                } else {
-                    d("myTAG", "Major F")
-                    Toast.makeText(requireContext(), "MAJOR F", Toast.LENGTH_LONG).show()
-                }
-
-
-            }
-
-            override fun onLocationAvailability(p0: LocationAvailability) {
-                super.onLocationAvailability(p0)
-            }
         }
     }
 

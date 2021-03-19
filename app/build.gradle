@@ -5,16 +5,22 @@ apply plugin: 'com.google.ar.sceneform.plugin'
 
 
 
-sceneform.asset('sampledata/livetree/Houseplant.gltf', // 'Source Asset Path' specified during import.
-        'default',                    // 'Material Path' specified during import.
-        'sampledata/livetree/houseplant.sfa', // '.sfa Output Path' specified during import.
+sceneform.asset('sampledata/livetree/Houseplant.gltf',
+        'default',
+        'sampledata/livetree/houseplant.sfa',
         'src/main/res/raw/houseplant',
       )
 
-sceneform.asset('sampledata/deadtree/PUSHILIN_dead_tree.obj', // 'Source Asset Path' specified during import.
-        'default',                    // 'Material Path' specified during import.
-        'sampledata/deadtree/PUSHILIN_dead_tree.sfa', // '.sfa Output Path' specified during import.
+sceneform.asset('sampledata/deadtree/PUSHILIN_dead_tree.obj',
+        'default',
+        'sampledata/deadtree/PUSHILIN_dead_tree.sfa',
         'src/main/res/raw/deadtree')
+
+sceneform.asset('sampledata/moderatetree/FiddleleafFigPottedPlant.gltf',
+        'default',
+        'sampledata/livetree/FiddleleafFigPottedPlant.sfa',
+        'src/main/res/raw/fiddleleaffigpottedplant',
+)
 
 android {
     compileSdkVersion 30
@@ -84,5 +90,8 @@ dependencies {
 
     //CircularProgressIndicator
     implementation 'com.github.antonKozyriatskyi:CircularProgressIndicator:1.3.0'
+
+    //OnBoarding
+    implementation 'com.ramotion.paperonboarding:paper-onboarding:1.1.3'
 
 }

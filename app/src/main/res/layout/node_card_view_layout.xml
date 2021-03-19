@@ -7,7 +7,7 @@
     app:cardBackgroundColor="#121212"
     android:background="#121212"
     android:backgroundTint="#121212"
-    android:layout_width="200dp"
+    android:layout_width="230dp"
     android:layout_height="100dp"
     android:layout_marginStart="16dp"
     android:layout_marginTop="8dp"
