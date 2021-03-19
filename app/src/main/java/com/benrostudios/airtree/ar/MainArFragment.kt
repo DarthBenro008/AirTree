@@ -1,26 +1,24 @@
 package com.benrostudios.airtree.ar
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.pm.PackageManager
-import retrofit2.Callback
 import android.location.LocationManager
 import android.os.Bundle
-import android.util.Log
 import android.util.Log.d
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
+import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.benrostudios.airtree.R
 import com.benrostudios.airtree.Secrets.API_KEY
 import com.benrostudios.airtree.models.WeatherModel
 import com.benrostudios.airtree.network.ServiceBuilder
 import com.benrostudios.airtree.network.WeatherApi
-import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.*
 import com.google.ar.core.Pose
 import com.google.ar.sceneform.AnchorNode
 import com.google.ar.sceneform.Node
@@ -29,9 +27,11 @@ import com.google.ar.sceneform.rendering.ViewRenderable
 import com.google.ar.sceneform.ux.ArFragment
 import com.google.ar.sceneform.ux.TransformableNode
 import kotlinx.android.synthetic.main.node_card_view_layout.view.*
+import kotlinx.android.synthetic.main.node_sideboard_layout.view.*
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.launch
 import retrofit2.Call
+import retrofit2.Callback
 import retrofit2.Response
 
 
@@ -40,10 +40,13 @@ class MainArFragment : Fragment(R.layout.fragment_ar) {
     private var deadTree: ModelRenderable? = null
     private var liveTree: ModelRenderable? = null
     private var aqiDashboard: ViewRenderable? = null
+    private var carbonSideboard: ViewRenderable? = null
+    private var emissionSideboard: ViewRenderable? = null
     lateinit var simuFragmentMain: ArFragment
     private var locationManager: LocationManager? = null
-//    private lateinit var weatherModel: WeatherModel
     private var fusedLocationClient: FusedLocationProviderClient? = null
+    private var locationRequest: LocationRequest? = null
+    private var locationCallback: LocationCallback? = null
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -85,20 +88,53 @@ class MainArFragment : Fragment(R.layout.fragment_ar) {
                     )
                 )
             )
+
+            val emissionBoardAnchorNode = AnchorNode(
+                hitResult.trackable.createAnchor(
+                    hitResult.hitPose.compose(
+                        Pose.makeTranslation(
+                            0.8f,
+                            1.0f,
+                            0.0f
+                        )
+                    )
+                )
+            )
+            val carbonBoardAnchorNode = AnchorNode(
+                hitResult.trackable.createAnchor(
+                    hitResult.hitPose.compose(
+                        Pose.makeTranslation(
+                            -0.8f,
+                            1.0f,
+                            0.0f
+                        )
+                    )
+                )
+            )
             textAnchorNode.setParent(simuFragmentMain.arSceneView.scene)
+            carbonBoardAnchorNode.setParent(simuFragmentMain.arSceneView.scene)
+            emissionBoardAnchorNode.setParent(simuFragmentMain.arSceneView.scene)
             anchorNode.setParent(simuFragmentMain.arSceneView.scene)
             val node: TransformableNode = TransformableNode(simuFragmentMain.transformationSystem)
             node.scaleController.maxScale = 0.5f;
             node.scaleController.minScale = 0.4f;
             val aqiIndex = weatherModel.list[0].main.aqi
-            node.renderable = when{
+            node.renderable = when {
                 aqiIndex > 3.0 -> deadTree
                 else -> liveTree
             }
             node.setParent(anchorNode)
             val textNode = Node()
+            val carbonNode = Node()
+            val emissionNode = Node()
             textAnchorNode.renderable = aqiDashboard
-            textNode.setParent(textAnchorNode);
+            carbonBoardAnchorNode.renderable = carbonSideboard
+            emissionBoardAnchorNode.renderable = emissionSideboard
+            textNode.setParent(textAnchorNode)
+            carbonNode.setParent(carbonBoardAnchorNode)
+            emissionNode.setParent(emissionBoardAnchorNode)
+            setCarbonSideboard(weatherModel)
+            setEmissionSideboard(weatherModel)
             setDashboard(aqiIndex)
         }
     }
@@ -119,12 +155,19 @@ class MainArFragment : Fragment(R.layout.fragment_ar) {
             aqiDashboard =
                 ViewRenderable.builder().setView(requireContext(), R.layout.node_card_view_layout)
                     .build().await()
+            carbonSideboard =
+                ViewRenderable.builder().setView(requireContext(), R.layout.node_sideboard_layout)
+                    .build().await()
+            emissionSideboard =
+                ViewRenderable.builder().setView(requireContext(), R.layout.node_sideboard_layout)
+                    .build().await()
+
 //            Toast.makeText(
 //                requireContext(),
 //                "Your Plants have been loaded!",
 //                Toast.LENGTH_SHORT
 //            ).show()
-//            initTapListener()
+
         }
     }
 
@@ -148,17 +191,74 @@ class MainArFragment : Fragment(R.layout.fragment_ar) {
             return
         }
 
-        fusedLocationClient?.lastLocation!!.addOnCompleteListener { task ->
-            if (task.isSuccessful && task.result != null) {
-                Toast.makeText(
-                    requireContext(),
-                    "${task.result.latitude} ${task.result.longitude}",
-                    Toast.LENGTH_LONG
-                )
-                    .show()
-                networkCall(task.result.latitude, task.result.longitude)
-            } else {
-                Log.w("myTag", "getLastLocation:exception", task.exception)
+//        fusedLocationClient?.lastLocation!!.addOnCompleteListener { task ->
+//            if (task.isSuccessful && task.result != null) {
+//                Toast.makeText(
+//                    requireContext(),
+//                    "${task.result.latitude} ${task.result.longitude}",
+//                    Toast.LENGTH_LONG
+//                )
+//                    .show()
+//                networkCall(task.result.latitude, task.result.longitude)
+//            } else {
+//                getLocationUpdates()
+//                Log.w(
+//                    "myTag",
+//                    "getLastLocation:exception ${task.exception} ${task.result} ${task.result}",
+//                    task.exception
+//                )
+//            }
+//        }.addOnFailureListener {
+//            Log.w("myTag", "lmaooooooo ${it.message} ${it.toString()}")
+//        }
+        fusedLocationClient?.lastLocation!!.addOnSuccessListener {
+            Toast.makeText(
+                requireContext(),
+                "${it.latitude} ${it.longitude}",
+                Toast.LENGTH_LONG
+            )
+                .show()
+            networkCall(it.latitude, it.longitude)
+        }.addOnFailureListener {
+            d("myTAG", "${it.message}")
+        }
+    }
+
+    private fun getLocationUpdates() {
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(context!!)
+        locationRequest = LocationRequest()
+        locationRequest!!.interval = 50000
+        locationRequest!!.fastestInterval = 50000
+        locationRequest!!.smallestDisplacement = 170f // 170 m = 0.1 mile
+        locationRequest!!.priority =
+            LocationRequest.PRIORITY_HIGH_ACCURACY //set according to your app function
+        locationCallback = object : LocationCallback() {
+            override fun onLocationResult(locationResult: LocationResult?) {
+                locationResult ?: return
+
+                if (locationResult.locations.isNotEmpty()) {
+                    fusedLocationClient!!.removeLocationUpdates(locationCallback!!)
+                    // get latest location
+                    val location =
+                        locationResult.lastLocation
+                    Toast.makeText(
+                        requireContext(),
+                        "lati: ${location.latitude} longi: ${location.longitude}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    // use your location object
+                    // get latitude , longitude and other info from this
+                    d("myTAG", "ggwp")
+                } else {
+                    d("myTAG", "Major F")
+                    Toast.makeText(requireContext(), "MAJOR F", Toast.LENGTH_LONG).show()
+                }
+
+
+            }
+
+            override fun onLocationAvailability(p0: LocationAvailability) {
+                super.onLocationAvailability(p0)
             }
         }
     }
@@ -170,6 +270,7 @@ class MainArFragment : Fragment(R.layout.fragment_ar) {
         call.enqueue(object : Callback<WeatherModel> {
             override fun onResponse(call: Call<WeatherModel>, response: Response<WeatherModel>) {
                 if (response.isSuccessful) {
+                    d("myTAG", "Network call success")
                     initTapListener(response.body()!!)
                 }
             }
@@ -181,23 +282,48 @@ class MainArFragment : Fragment(R.layout.fragment_ar) {
         })
     }
 
-    private fun setDashboard(aqiIndex: Double){
+    private fun setDashboard(aqiIndex: Double) {
         val dashboardView = aqiDashboard?.view
         dashboardView?.aqi_progress?.setProgress(5 - aqiIndex, 5.0);
-        val aqiText = when(aqiIndex){
-            5.0 ->  "Very Poor Quality Air"
+        val aqiText = when (aqiIndex) {
+            5.0 -> "Very Poor Quality Air"
             4.0 -> "Moderate Quality Air"
             3.0 -> "Fair Quality Air"
             2.0 -> "Good Air"
             1.0 -> "Healthy Air"
             else -> "Loading"
         }
-        val plantHealth: String = when{
+        val plantHealth: String = when {
             aqiIndex >= 3 -> "Your plant isn't feeling well!"
             else -> "Your plant is feeling good!"
         }
         dashboardView?.plantHealth?.text = plantHealth
         dashboardView?.aqi_text?.text = aqiText
     }
+
+    @SuppressLint("SetTextI18n")
+    private fun setCarbonSideboard(weatherModel: WeatherModel) {
+        val carbonSideboardView = carbonSideboard?.view
+        carbonSideboardView?.header_sideboard?.text = "Carbon Emission"
+        carbonSideboardView?.sideboard_title_one?.text = "CO2:"
+        carbonSideboardView?.sideboard_title_two?.text = "O3:"
+        carbonSideboardView?.sideboard_value_one?.text =
+            "${weatherModel.list[0].components.co} μg/m3"
+        carbonSideboardView?.sideboard_value_two?.text =
+            "${weatherModel.list[0].components.o3} μg/m3"
+    }
+
+    @SuppressLint("SetTextI18n")
+    private fun setEmissionSideboard(weatherModel: WeatherModel) {
+        val emissionSideboardView = emissionSideboard?.view
+        emissionSideboardView?.header_sideboard?.text = "Particulate Matter"
+        emissionSideboardView?.sideboard_title_one?.text = "Fine Particulate"
+        emissionSideboardView?.sideboard_title_two?.text = "Coarse Particulate"
+        emissionSideboardView?.sideboard_value_one?.text =
+            "${weatherModel.list[0].components.pm25} μg/m3"
+        emissionSideboardView?.sideboard_value_two?.text =
+            "${weatherModel.list[0].components.pm10} μg/m3"
+    }
+
 
 }
