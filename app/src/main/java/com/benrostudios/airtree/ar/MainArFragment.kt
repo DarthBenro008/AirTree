@@ -238,7 +238,9 @@ class MainArFragment : Fragment(R.layout.fragment_ar) {
             override fun onResponse(call: Call<WeatherModel>, response: Response<WeatherModel>) {
                 if (response.isSuccessful) {
                     d("myTAG", "Network call success")
-                    initTapListener(response.body()!!)
+                    val weatherModel = WeatherModel()
+
+                    initTapListener(weatherModel)
                 }
             }
 

@@ -44,6 +44,23 @@ object Secrets {
 
 - Build and run the app using gradle
 
+
+### The Three Plant Stages
+
+<table style="width:100%">
+  <tr>
+    <th>Healthy Tree</th>
+    <th>Fairly Healthy Plant</th>
+    <th>Deadplant</th>
+  </tr>
+  <tr>
+    <td><img src="assets/livetree.jpg" height="130" width="100"/></td>
+    <td><img src="assets/midtree.jpg" height="150" width="100"/></td>
+    <td><img src="assets/deadtree.png" height="150" width="100"/></td>
+  </tr>
+</table>
+
+> Credits to some of these assets go to Google from creating and publishing it on [poly](https://poly.google.com)
 ## Author
 
 👨‍💻 Hemanth Krishna [@DarthBenro008](http://github.com/DarthBenro008)

@@ -18,7 +18,7 @@ class StarterActivity : AppCompatActivity() {
     }
 
 
-    private fun createOnBoarding(){
+    private fun createOnBoarding() {
         val scr1 = PaperOnboardingPage(
             "Welcome to ARTree",
             "An AR Tree that teaches you about your environment",
@@ -29,7 +29,7 @@ class StarterActivity : AppCompatActivity() {
         val scr2 = PaperOnboardingPage(
             "Get to know your surrounding",
             "Get to know about your air quality around you and grow a plant! Visualise in a fun way",
-            Color.parseColor("#65B0B4"),
+            Color.parseColor("#FFA502"),
             R.drawable.saly,
             R.drawable.ic_baseline_keyboard_arrow_right_24
         )

@@ -5,5 +5,5 @@ import com.google.gson.annotations.SerializedName
 
 data class WeatherModel(
     var coord: Coord = Coord(),
-    var list: List<WeatherData> = emptyList()
+    var list: List<WeatherData> = listOf(WeatherData())
 )
